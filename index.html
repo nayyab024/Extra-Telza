@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telza AI — AI Communication &amp; Automation Platform</title>
+  <meta name="description" content="Telza AI automates customer conversations across voice calls, WhatsApp and e-commerce with AI voice agents, inbound and outbound calling, and Fillo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       BRAND TOKENS — replace with Telza AI's official values.
+       The 3D scene reads --brand-1/2/3 at startup, so changing
+       them here re-colours the particles too.
+       ========================================================= */
+    :root {
+      --brand-1: #39FF14;          /* primary: Telza green */
+      --brand-2: #14C9B8;          /* secondary: Telza teal */
+      --brand-3: #eef0ff;          /* highlight */
+      --bg: #05060c;
+      --bg-2: #0b0d18;
+      --text: #eef0ff;
+      --muted: #9aa0bd;
+      --line: rgba(255, 255, 255, 0.14);
+      --glass: rgba(14, 16, 30, 0.55);
+      --grad: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+      --font-display: "Space Grotesk", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --gutter: clamp(16px, 4vw, 48px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+    a { color: inherit; }
+    h1, h2, h3 { font-family: var(--font-display); line-height: 1.05; margin: 0; letter-spacing: -0.03em; }
+
+    /* ---------- 3D layer ---------- */
+    #gl {
+      position: fixed; inset: 0;
+      width: 100%; height: 100vh;
+      z-index: 0; display: block;
+      pointer-events: none;
+    }
+    .vignette {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(5, 6, 12, 0.75) 100%),
+        linear-gradient(180deg, rgba(5, 6, 12, 0.35), transparent 20%, transparent 80%, rgba(5, 6, 12, 0.5));
+    }
+    .no-webgl #gl { display: none; }
+    .no-webgl body {
+      background:
+        radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--brand-1) 35%, transparent), transparent 45%),
+        radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--brand-2) 22%, transparent), transparent 40%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+
+    /* ---------- Header + chapter nav ---------- */
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      gap: 16px; padding: 18px var(--gutter);
+    }
+    .logo {
+      font-family: var(--font-display); font-weight: 700; font-size: 1.25rem;
+      text-decoration: none; letter-spacing: -0.02em;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .logo-mark {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: conic-gradient(from 200deg, var(--brand-1), var(--brand-2), var(--brand-1));
+      box-shadow: 0 0 18px color-mix(in srgb, var(--brand-1) 70%, transparent);
+    }
+    .logo span.ai { color: var(--brand-2); }
+    .header-cta { justify-self: end; }
+
+    .chapters { width: clamp(300px, 38vw, 560px); }
+    .anim .chapters { visibility: hidden; }
+    .chapter-list {
+      list-style: none; margin: 0 0 8px; padding: 0;
+      display: grid; grid-template-columns: repeat(5, 1fr);
+    }
+    .chapter {
+      display: block; overflow: hidden; text-decoration: none;
+      font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); text-align: center; transition: color .3s;
+    }
+    .chapter span { display: inline-block; }
+    .chapter.is-active { color: var(--text); }
+    .chapters-track { position: relative; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+    .chapters-fill { position: absolute; inset: 0; background: var(--grad); transform: scaleX(0); transform-origin: 0 50%; }
+    .chapter-current { display: none; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 22px; border-radius: 999px;
+      font: 600 0.92rem var(--font-body); text-decoration: none;
+      border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: transform .3s, background .3s, border-color .3s;
+    }
+    .btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.3); }
+    .btn-primary {
+      border-color: transparent; color: #fff;
+      background: var(--grad);
+      box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--brand-1) 80%, transparent);
+    }
+    .btn:focus-visible, .chapter:focus-visible, .logo:focus-visible { outline: 2px solid var(--brand-2); outline-offset: 3px; }
+
+    main { position: relative; z-index: 2; }
+    section { position: relative; }
+    .container { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 var(--gutter); }
+    .kicker {
+      display: inline-flex; align-items: center; gap: 12px;
+      font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--brand-2);
+      margin-bottom: 20px;
+    }
+    .kicker::before { content: ""; width: 36px; height: 1px; background: var(--grad); }
+    .h2 { font-size: clamp(2.1rem, 5vw, 4.2rem); font-weight: 600; max-width: 14ch; }
+    .lead { color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.15rem); max-width: 46ch; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      height: 100vh; min-height: 560px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 0 var(--gutter);
+    }
+    .hero-eyebrow {
+      font-size: 0.78rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted);
+      margin: 0 0 28px; clip-path: inset(0 0 0 0);
+    }
+    .split {
+      width: 100%;
+      display: flex; justify-content: center; align-items: center; column-gap: 0.26em;
+      font-size: clamp(3.2rem, 12vw, 10.5rem); font-weight: 700; line-height: 1;
+      letter-spacing: -0.05em; will-change: transform;
+    }
+    .word { position: relative; display: inline-block; padding: 0 0.02em; will-change: transform; }
+    .word .txt {
+      display: block;
+      background: linear-gradient(180deg, #ffffff 30%, color-mix(in srgb, var(--brand-1) 45%, #ffffff));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .word .fill {
+      position: absolute; left: 0; right: 0; top: 0.12em; bottom: 0.12em;
+      background: var(--grad); border-radius: 3px;
+      transform: scaleX(0); transform-origin: 0 50%;
+    }
+    .word.w2 .fill { transform-origin: 100% 50%; }
+    .hero-sub { margin: 28px auto 0; clip-path: inset(0 0 0 0); }
+    .hero-ctas { margin-top: 36px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; clip-path: inset(0 0 0 0); }
+    .scroll-cue {
+      position: absolute; bottom: 28px; left: 50%; width: 1px; height: 56px;
+      background: linear-gradient(var(--brand-2), transparent); transform-origin: 50% 0;
+    }
+
+    /* ---------- About ---------- */
+    .about { min-height: 120vh; display: flex; align-items: center; padding: 18vh 0; }
+    .about .lead { margin-top: 28px; }
+    .points { list-style: none; padding: 0; margin: 40px 0 0; display: grid; gap: 14px; max-width: 460px; }
+    .points li {
+      display: flex; gap: 16px; align-items: baseline;
+      padding: 16px 0; border-top: 1px solid var(--line);
+    }
+    .points b { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+    .points em { font-style: normal; color: var(--brand-2); font-size: 0.78rem; letter-spacing: .1em; }
+
+    /* ---------- Capabilities (pinned horizontal) ---------- */
+    .caps { height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+    .caps-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 6vh; }
+    .caps-count { font-family: var(--font-display); color: var(--muted); font-size: 0.9rem; letter-spacing: .1em; }
+    .caps-stage { perspective: 1400px; }
+    .caps-track {
+      display: flex; gap: clamp(16px, 2.4vw, 32px);
+      padding: 0 var(--gutter); width: max-content;
+      transform-style: preserve-3d;
+    }
+    .cap-card {
+      width: clamp(280px, 30vw, 420px); min-height: 360px;
+      padding: 32px; border-radius: 24px;
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.015));
+      border: 1px solid var(--line);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      display: flex; flex-direction: column; justify-content: space-between;
+      will-change: transform;
+    }
+    .cap-num { font-family: var(--font-display); font-size: 0.85rem; color: var(--brand-2); letter-spacing: .12em; }
+    .cap-icon {
+      width: 56px; height: 56px; border-radius: 16px; margin: 28px 0;
+      background: var(--grad); opacity: .9;
+      -webkit-mask: var(--icon) center / 60% no-repeat; mask: var(--icon) center / 60% no-repeat;
+    }
+    .cap-card h3 { font-size: 1.6rem; font-weight: 600; margin-bottom: 12px; }
+    .cap-card p { color: var(--muted); margin: 0 0 22px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tags span { font-size: .72rem; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+
+    /* ---------- Process (pinned step deck) ---------- */
+    .process { height: 100vh; display: flex; align-items: center; }
+    .process .container { display: grid; grid-template-columns: 1fr 1fr; gap: 6vw; align-items: center; }
+    .proc-index {
+      display: flex; align-items: center; gap: 16px; margin-top: 40px;
+      font-family: var(--font-display); color: var(--muted);
+    }
+    .digits { height: 3.2rem; overflow: hidden; font-size: 3.2rem; line-height: 1; color: var(--text); font-weight: 600; }
+    .digits-col { display: flex; flex-direction: column; }
+    .proc-bar { width: 140px; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+    .proc-bar i { position: absolute; inset: 0; background: var(--grad); transform: scaleX(0); transform-origin: 0 50%; }
+    .steps { position: relative; height: min(380px, 52vh); perspective: 1200px; }
+    .step {
+      position: absolute; inset: 0; padding: clamp(24px, 3vw, 40px); border-radius: 24px;
+      background: linear-gradient(160deg, rgba(20,22,40,.85), rgba(10,11,22,.7));
+      border: 1px solid var(--line);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      will-change: transform;
+    }
+    .step-tag { font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; color: var(--brand-2); margin-bottom: auto; }
+    .step h3 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 600; margin-bottom: 14px; }
+    .step p { color: var(--muted); margin: 0; max-width: 40ch; }
+
+    /* ---------- Impact ---------- */
+    .impact { min-height: 120vh; display: flex; align-items: center; padding: 16vh 0; text-align: center; }
+    .impact .h2, .impact .lead { margin-left: auto; margin-right: auto; }
+    .impact .h2 { max-width: 16ch; }
+    .impact .lead { margin-top: 20px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 10vh; }
+    .stat { padding: 28px 12px; border-top: 1px solid var(--line); }
+    .stat-num {
+      font-family: var(--font-display); font-weight: 600; font-size: clamp(2.6rem, 5vw, 4.4rem); line-height: 1;
+      background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-label { color: var(--muted); margin-top: 10px; font-size: .95rem; }
+
+    /* ---------- Contact / CTA ---------- */
+    .cta { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14vh var(--gutter); }
+    .cta .split { font-size: clamp(3rem, 10vw, 8.5rem); }
+    .cta .lead { margin: 28px auto 36px; }
+    footer {
+      position: relative; z-index: 2;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 28px var(--gutter); border-top: 1px solid var(--line);
+      color: var(--muted); font-size: .85rem;
+    }
+    footer a { text-decoration: none; }
+    footer nav { display: flex; gap: 20px; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+      .process .container { grid-template-columns: 1fr; gap: 32px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 767px) {
+      .site-header { grid-template-columns: 1fr auto; row-gap: 12px; padding-top: 14px; padding-bottom: 10px; background: linear-gradient(180deg, rgba(5,6,12,.85), transparent); }
+      .chapters { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+      .chapter-list { display: none; }
+      .chapter-current { display: block; font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+      .header-cta { padding: 9px 16px; font-size: .82rem; }
+      .about .lead, .points { background: var(--glass); border-radius: 16px; padding: 16px; }
+      .points li:first-child { border-top: 0; }
+      .caps-head { flex-direction: column; align-items: flex-start; }
+      .cap-card { width: 82vw; min-height: 340px; padding: 26px; }
+      .process { height: auto; min-height: 100vh; padding: 120px 0 40px; }
+      .steps { height: 360px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+    }
+
+    /* =========================================================
+       STORYTELLING LAYERS (fill the quiet scroll moments)
+       ========================================================= */
+    /* hero dive: keywords + caption */
+    .dive-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; visibility: hidden; }
+    .kw {
+      position: absolute; left: calc(50% + var(--x) * 1vw); top: calc(50% + var(--y) * 1vh);
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+      padding: 8px 14px; border-radius: 999px;
+      font: 500 clamp(.72rem, 1vw, .9rem) var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--brand-2) 40%, transparent);
+      background: rgba(5, 6, 12, 0.55);
+      will-change: transform, opacity;
+    }
+    .kw::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--brand-1); box-shadow: 0 0 10px var(--brand-1); }
+    .dive-title {
+      position: absolute; left: 0; right: 0; top: 50%; margin: 0; padding: 0 var(--gutter);
+      text-align: center; font: 600 clamp(2rem, 5.6vw, 4.8rem)/1.08 var(--font-display); letter-spacing: -.03em;
+      will-change: transform, opacity;
+    }
+    .dt-line { display: block; overflow: hidden; padding-bottom: .06em; }
+    .dt-line > span { display: inline-block; }
+    .dive-title .grad, .kt-fill { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* kinetic typography strips */
+    .kinetic { position: absolute; left: 0; right: 0; top: 3vh; overflow: hidden; pointer-events: none; white-space: nowrap; text-align: left; }
+    .kinetic-row {
+      display: inline-flex; align-items: center; gap: .45em; padding-left: 4vw;
+      font: 700 clamp(3rem, 10vw, 9rem)/1.05 var(--font-display); letter-spacing: -.04em;
+      will-change: transform;
+    }
+    .kt {
+      color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, 0.16);
+      background: var(--grad) no-repeat 0 0 / 0% 100%;
+      -webkit-background-clip: text; background-clip: text;
+    }
+    .kinetic-row i { flex: none; width: .14em; height: .14em; border-radius: 50%; background: var(--brand-1); box-shadow: 0 0 18px var(--brand-1); opacity: .7; }
+
+    /* live product highlights */
+    .live-chips { position: absolute; inset: 0; pointer-events: none; }
+    .live-chip {
+      position: absolute; top: var(--top); right: var(--right);
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 14px; border-radius: 16px;
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.015));
+      border: 1px solid var(--line);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      will-change: transform;
+    }
+    .live-chip b { display: block; font: 600 .92rem/1.3 var(--font-display); }
+    .live-chip small { display: block; font-size: .74rem; color: var(--muted); }
+    .live-chip .dot { position: relative; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--brand-1); box-shadow: 0 0 12px var(--brand-1); }
+    .live-chip .dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid var(--brand-1); animation: chip-ping 2.2s ease-out infinite; }
+    @keyframes chip-ping { from { transform: scale(.6); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+
+    @media (max-width: 899px) { .live-chips { display: none; } }
+    @media (max-width: 767px) {
+      .kw--desk { display: none; }
+      .kinetic { top: 2vh; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .live-chip .dot::after { animation: none; }
+      .kt { background-size: 100% 100%; }
+    }
+
+    /* =========================================================
+       NAVBAR MEGA MENUS (Our Services · Industries · Case Study · Resources)
+       Uses only the existing brand tokens.
+       ========================================================= */
+    .header-actions { justify-self: end; display: flex; align-items: center; gap: 10px; }
+    .mega-list { list-style: none; margin: 0; padding: 0; }
+    .mega-trigger {
+      position: relative; display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 0; cursor: pointer; color: var(--muted);
+      font: 500 0.9rem var(--font-body);
+    }
+    a.mega-trigger { text-decoration: none; }
+    .mega-trigger .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s cubic-bezier(.16,1,.3,1); }
+    .mega-item.is-open .mega-trigger { color: var(--text); }
+    .mega-item.is-open .mega-trigger .chev { transform: rotate(180deg); }
+    .mega-trigger:focus-visible, .mega-link:focus-visible, .mega-feature:focus-visible, .case-card:focus-visible, .mega-foot a:focus-visible, .nav-toggle:focus-visible { outline: 2px solid var(--brand-2); outline-offset: 2px; }
+
+    .mega-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(180deg, rgba(14, 16, 28, 0.94), rgba(7, 8, 15, 0.97));
+      border: 1px solid var(--line); border-radius: 22px;
+      box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+    }
+    .mega-card::before {
+      content: ""; position: absolute; left: 10%; right: 10%; top: 0; height: 1px;
+      background: var(--grad); opacity: .7;
+    }
+    .mega-card::after {
+      content: ""; position: absolute; width: 360px; height: 360px; right: -120px; top: -200px; pointer-events: none;
+      background: radial-gradient(circle, color-mix(in srgb, var(--brand-1) 14%, transparent), transparent 70%);
+    }
+    .mega-body { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 290px; gap: 22px; padding: 22px; }
+    .mega-body--full { display: block; }
+    .mega-label { margin: 4px 12px 12px; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--brand-2); }
+    .mega-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; }
+
+    .mega-link {
+      display: flex; gap: 14px; align-items: flex-start; padding: 12px; border-radius: 14px;
+      text-decoration: none; transition: background .25s;
+    }
+    .mega-link b { display: block; font: 600 .95rem/1.3 var(--font-display); color: var(--text); letter-spacing: -.01em; }
+    .mega-link small { display: block; margin-top: 3px; font-size: .8rem; line-height: 1.45; color: var(--muted); }
+    .mega-link:hover { background: rgba(255, 255, 255, 0.045); }
+    .mi-icon {
+      flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+      color: var(--brand-2); background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line);
+      transition: color .25s, border-color .25s, box-shadow .25s, transform .35s cubic-bezier(.16,1,.3,1);
+    }
+    .mi-icon svg, .mega-foot svg, .feat-cta svg, .case-more svg {
+      width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .mega-link:hover .mi-icon, .case-card:hover .mi-icon {
+      color: var(--brand-1); transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--brand-1) 45%, transparent);
+      box-shadow: 0 0 22px -6px color-mix(in srgb, var(--brand-1) 70%, transparent);
+    }
+
+    .mega-feature {
+      position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
+      min-height: 230px; padding: 22px; border-radius: 16px; text-decoration: none;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--brand-1) 26%, transparent), transparent 55%),
+        radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--brand-2) 24%, transparent), transparent 60%),
+        rgba(255, 255, 255, 0.02);
+      transition: border-color .3s;
+    }
+    .mega-feature:hover { border-color: color-mix(in srgb, var(--brand-1) 40%, transparent); }
+    .feat-orb {
+      position: absolute; top: 18px; right: 18px; width: 74px; height: 74px; border-radius: 50%;
+      background: conic-gradient(from 200deg, var(--brand-1), var(--brand-2), var(--brand-1));
+      -webkit-mask: radial-gradient(circle, transparent 54%, #000 56%); mask: radial-gradient(circle, transparent 54%, #000 56%);
+      opacity: .85; animation: orb-spin 8s linear infinite;
+    }
+    @keyframes orb-spin { to { transform: rotate(360deg); } }
+    .feat-tag { align-self: flex-start; margin-bottom: auto; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); background: rgba(0, 0, 0, 0.25); }
+    .mega-feature b { font: 600 1.15rem/1.25 var(--font-display); color: var(--text); }
+    .mega-feature small { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+    .feat-cta, .case-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .85rem; font-weight: 600; color: var(--brand-1); }
+    .feat-cta svg, .case-more svg, .mega-foot svg { width: 16px; height: 16px; transition: transform .3s; }
+    .mega-feature:hover .feat-cta svg, .case-card:hover .case-more svg, .mega-foot a:hover svg { transform: translateX(4px); }
+
+    .case-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .case-card {
+      display: flex; flex-direction: column; overflow: hidden; border-radius: 16px; text-decoration: none;
+      border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+      transition: border-color .3s, background .3s;
+    }
+    .case-card:hover { border-color: color-mix(in srgb, var(--brand-1) 35%, transparent); background: rgba(255, 255, 255, 0.04); }
+    .case-visual {
+      position: relative; height: 112px; display: grid; place-items: center;
+      background:
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(var(--a, 20deg), color-mix(in srgb, var(--brand-1) 30%, transparent), color-mix(in srgb, var(--brand-2) 22%, transparent) 60%, transparent);
+    }
+    .case-visual .mi-icon { background: rgba(5, 6, 12, 0.55); }
+    .case-meta { display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+    .case-tag { align-self: flex-start; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--brand-2); }
+    .case-meta b { font: 600 .98rem/1.35 var(--font-display); color: var(--text); }
+    .case-more { margin-top: 2px; }
+
+    .mega-foot {
+      position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 24px; border-top: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+      font-size: .85rem; color: var(--muted);
+    }
+    .mega-foot a { display: inline-flex; align-items: center; gap: 6px; color: var(--brand-2); text-decoration: none; font-weight: 600; }
+
+    /* staggered content entrance (shared by desktop panels and mobile accordions) */
+    .mega-panel .mega-link, .mega-panel .mega-feature, .mega-panel .case-card {
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1), background .25s, border-color .3s;
+    }
+    .mega-item.is-open .mega-panel .mega-link,
+    .mega-item.is-open .mega-panel .mega-feature,
+    .mega-item.is-open .mega-panel .case-card {
+      opacity: 1; transform: none; transition-delay: calc(var(--i, 0) * 35ms + 70ms), calc(var(--i, 0) * 35ms + 70ms), 0s, 0s;
+    }
+
+    .nav-toggle {
+      display: none; position: relative; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+      border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--text);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .nav-toggle span {
+      position: absolute; left: 50%; top: 50%; width: 18px; height: 1.6px; margin-left: -9px; border-radius: 2px;
+      background: currentColor; transition: transform .4s cubic-bezier(.16,1,.3,1);
+    }
+    .nav-toggle span:first-child { transform: translateY(-4px); }
+    .nav-toggle span:last-child { transform: translateY(4px); }
+    .menu-open .nav-toggle span:first-child { transform: rotate(45deg); }
+    .menu-open .nav-toggle span:last-child { transform: rotate(-45deg); }
+
+    /* ---- Desktop / laptop: pill nav + floating mega panels ---- */
+    @media (min-width: 1100px) {
+      .site-header { row-gap: 10px; }
+      .logo { grid-column: 1; grid-row: 1; }
+      .mega-nav { grid-column: 2; grid-row: 1; justify-self: center; }
+      .chapters { grid-column: 2; grid-row: 2; justify-self: center; }
+      .header-actions { grid-column: 3; grid-row: 1; }
+      .mega-list {
+        display: flex; gap: 2px; padding: 4px; border-radius: 999px;
+        border: 1px solid var(--line); background: rgba(10, 12, 20, 0.6);
+      }
+      .mega-trigger { padding: 9px 16px; border-radius: 999px; transition: color .25s, background .25s; }
+      .mega-trigger:hover, .mega-item.is-open .mega-trigger { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+      /* hover bridge so the pointer can travel from trigger to panel */
+      .mega-item.is-open .mega-trigger::after { content: ""; position: absolute; left: -24px; right: -24px; top: 100%; height: 70px; }
+      .mega-panel {
+        position: absolute; top: calc(100% + 6px); left: 50%;
+        width: min(1040px, calc(100vw - 2 * var(--gutter)));
+        transform: translate(-50%, -12px) scale(.985); transform-origin: 50% 0;
+        opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity .22s ease, transform .3s cubic-bezier(.4,0,.2,1), visibility 0s linear .3s;
+      }
+      .mega-item.is-open .mega-panel {
+        opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0) scale(1);
+        transition: opacity .3s ease, transform .5s cubic-bezier(.16,1,.3,1), visibility 0s;
+      }
+      .mega-card { max-height: calc(100vh - 150px); overflow-y: auto; }
+    }
+    @media (min-width: 1100px) and (max-width: 1279px) {
+      .mega-trigger { padding: 8px 12px; font-size: .86rem; }
+      .mega-body { grid-template-columns: 1fr 250px; }
+    }
+
+    /* ---- Tablet & mobile: full-screen menu with accordions ---- */
+    @media (max-width: 1099px) {
+      .nav-toggle { display: inline-block; }
+      .mega-nav {
+        position: fixed; inset: 0; z-index: -1; overflow-y: auto; overscroll-behavior: contain;
+        padding: calc(var(--hh, 80px) + 12px) var(--gutter) 40px;
+        background: rgba(5, 6, 12, 0.97);
+        backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        clip-path: inset(0 0 100% 0); visibility: hidden;
+        transition: clip-path .55s cubic-bezier(.7,0,.2,1), visibility 0s linear .55s;
+      }
+      .menu-open .mega-nav { clip-path: inset(0 0 0 0); visibility: visible; transition: clip-path .6s cubic-bezier(.7,0,.2,1), visibility 0s; }
+      html.menu-lock { overflow: hidden; }
+      .mega-list { max-width: 720px; margin: 0 auto; }
+      .mega-item {
+        border-bottom: 1px solid var(--line);
+        opacity: 0; transform: translateY(18px);
+        transition: opacity .3s ease, transform .5s cubic-bezier(.16,1,.3,1);
+      }
+      .menu-open .mega-item { opacity: 1; transform: none; transition-delay: calc(var(--n, 0) * 60ms + 200ms); }
+      .mega-trigger { width: 100%; justify-content: space-between; padding: 20px 0; color: var(--text); font: 600 1.35rem var(--font-display); letter-spacing: -.02em; }
+      .mega-trigger .chev { width: 20px; height: 20px; color: var(--brand-2); }
+      .mega-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1); }
+      .mega-item.is-open .mega-panel { grid-template-rows: 1fr; }
+      .mega-card { min-height: 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .mega-card::before, .mega-card::after { display: none; }
+      .mega-body { grid-template-columns: 1fr; gap: 14px; padding: 0 0 18px; }
+      .mega-label { margin: 0 0 8px; }
+      .mega-link { padding: 10px 0; }
+      .mega-link:hover { background: none; }
+      .mega-feature { min-height: 170px; }
+      .case-grid { grid-template-columns: 1fr; }
+      .case-visual { height: 90px; }
+      .mega-foot { padding: 0 0 20px; border: 0; background: none; }
+    }
+    @media (min-width: 600px) and (max-width: 1099px) {
+      .case-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 599px) {
+      .mega-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mega-panel, .mega-panel *, .mega-nav, .mega-item, .nav-toggle span, .mega-trigger .chev { transition-duration: .01ms !important; transition-delay: 0s !important; }
+      .feat-orb { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="logo" href="#hero" aria-label="Telza AI home"><span class="logo-mark"></span>Telza<span class="ai">AI</span></a>
+
+    <!-- ===== Main navigation with mega dropdowns =====
+         TODO: point the "#" links at the real Telza AI pages. -->
+    <nav class="mega-nav" id="mega-nav" aria-label="Main">
+      <ul class="mega-list">
+        <!-- Our Services -->
+        <li class="mega-item">
+          <button class="mega-trigger" type="button" aria-expanded="false" aria-controls="mp-services">Our Services<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="mega-panel" id="mp-services">
+            <div class="mega-card">
+              <div class="mega-body">
+                <div>
+                  <p class="mega-label">What we build</p>
+                  <div class="mega-grid">
+                    <a class="mega-link" href="#capabilities"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/></svg></span><span><b>AI Agents</b><small>Human-like assistants for chat, voice and email, 24/7.</small></span></a>
+                    <a class="mega-link" href="#capabilities"><span class="mi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/><path d="M6.5 9v4.5a2 2 0 0 0 2 2H14"/></svg></span><span><b>Intelligent Automation</b><small>Workflows that read, route and update your systems.</small></span></a>
+                    <a class="mega-link" href="#capabilities"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M5 20V11M10 20V5M15 20v-7M20 20V9M3 20h18"/></svg></span><span><b>Predictive Analytics</b><small>Forecasts and dashboards for confident decisions.</small></span></a>
+                    <a class="mega-link" href="#capabilities"><span class="mi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 6.5l3.8 3.8M17.5 6.5l-3.8 3.8M12 14.5V18"/></svg></span><span><b>Custom AI Models</b><small>Models tuned on your data, deployed securely.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span><b>AI Voice Agents</b><small>Inbound and outbound calls handled naturally.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></span><span><b>AI Strategy &amp; Consulting</b><small>Find where AI creates the most value, fastest.</small></span></a>
+                  </div>
+                </div>
+                <a class="mega-feature" href="#contact">
+                  <span class="feat-orb" aria-hidden="true"></span>
+                  <span class="feat-tag">Live demo</span>
+                  <b>See Telza AI in action</b>
+                  <small>A tailored walkthrough of agents and automation built around your workflows.</small>
+                  <span class="feat-cta">Book a demo <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </a>
+              </div>
+              <div class="mega-foot"><span>Not sure where to start?</span><a href="#contact">Talk to an AI specialist <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Industries -->
+        <li class="mega-item">
+          <button class="mega-trigger" type="button" aria-expanded="false" aria-controls="mp-industries">Industries<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="mega-panel" id="mp-industries">
+            <div class="mega-card">
+              <div class="mega-body">
+                <div>
+                  <p class="mega-label">Industries we serve</p>
+                  <div class="mega-grid">
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-8.6-9C2.3 7.8 4.4 5 7.4 5c2 0 3.6 1.1 4.6 2.6C13 6.1 14.6 5 16.6 5c3 0 5.1 2.8 4 6-1.6 4.6-8.6 9-8.6 9z"/></svg></span><span><b>Healthcare</b><small>Patient intake, scheduling and follow-ups.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h11L21 7H6.2"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span><span><b>E-Commerce &amp; Retail</b><small>Order support, recommendations and recovery.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg></span><span><b>Finance &amp; Banking</b><small>Secure customer service and risk insights.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-6h4v6"/></svg></span><span><b>Real Estate</b><small>Lead qualification and viewing bookings.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span><b>Insurance</b><small>Claims intake and policy questions, automated.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></span><span><b>Logistics</b><small>Shipment tracking and dispatch automation.</small></span></a>
+                  </div>
+                </div>
+                <a class="mega-feature" href="#contact">
+                  <span class="feat-orb" aria-hidden="true"></span>
+                  <span class="feat-tag">Tailored AI</span>
+                  <b>Don't see your industry?</b>
+                  <small>Telza AI adapts to your data, tools and processes — whatever you do.</small>
+                  <span class="feat-cta">Let's talk <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Case Study — TODO: replace with real Telza AI case studies -->
+        <li class="mega-item">
+          <button class="mega-trigger" type="button" aria-expanded="false" aria-controls="mp-cases">Case Study<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="mega-panel" id="mp-cases">
+            <div class="mega-card">
+              <div class="mega-body mega-body--full">
+                <p class="mega-label">Featured case studies</p>
+                <div class="case-grid">
+                  <a class="case-card" href="#">
+                    <span class="case-visual" style="--a:20deg"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-8.6-9C2.3 7.8 4.4 5 7.4 5c2 0 3.6 1.1 4.6 2.6C13 6.1 14.6 5 16.6 5c3 0 5.1 2.8 4 6-1.6 4.6-8.6 9-8.6 9z"/></svg></span></span>
+                    <span class="case-meta"><span class="case-tag">Healthcare</span><b>Automating patient intake with AI voice agents</b><span class="case-more">Read story <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+                  </a>
+                  <a class="case-card" href="#">
+                    <span class="case-visual" style="--a:140deg"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h11L21 7H6.2"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span></span>
+                    <span class="case-meta"><span class="case-tag">E-Commerce</span><b>Round-the-clock order support for an online retailer</b><span class="case-more">Read story <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+                  </a>
+                  <a class="case-card" href="#">
+                    <span class="case-visual" style="--a:260deg"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg></span></span>
+                    <span class="case-meta"><span class="case-tag">Finance</span><b>Predictive insights for faster lending decisions</b><span class="case-more">Read story <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+                  </a>
+                </div>
+              </div>
+              <div class="mega-foot"><span>Real results from teams using Telza AI.</span><a href="#">View all case studies <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Resources -->
+        <li class="mega-item">
+          <button class="mega-trigger" type="button" aria-expanded="false" aria-controls="mp-resources">Resources<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="mega-panel" id="mp-resources">
+            <div class="mega-card">
+              <div class="mega-body">
+                <div>
+                  <p class="mega-label">Learn &amp; explore</p>
+                  <div class="mega-grid">
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8 12h8M8 16h6"/></svg></span><span><b>Blog</b><small>Ideas and news on applied AI.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 0 2 2h14v-4"/></svg></span><span><b>Guides &amp; Whitepapers</b><small>Deep dives for planning your AI roadmap.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span><span><b>Video Tutorials</b><small>Step-by-step walkthroughs of the platform.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><path d="M8 6l-5 6 5 6M16 6l5 6-5 6M13.5 4l-3 16"/></svg></span><span><b>Documentation</b><small>APIs, integrations and setup guides.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span><b>Webinars</b><small>Live sessions with our AI specialists.</small></span></a>
+                    <a class="mega-link" href="#"><span class="mi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg></span><span><b>Help Center</b><small>Answers to common questions.</small></span></a>
+                  </div>
+                </div>
+                <a class="mega-feature" href="#">
+                  <span class="feat-orb" aria-hidden="true"></span>
+                  <span class="feat-tag">Latest insight</span>
+                  <b>The practical guide to AI agents for business</b>
+                  <small>What they are, where they help most, and how to roll them out safely.</small>
+                  <span class="feat-cta">Read the guide <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Contact (plain link, no dropdown) -->
+        <li class="mega-item mega-item--link">
+          <a class="mega-trigger" href="#contact">Contact</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a class="btn btn-primary header-cta" href="#contact">Book a demo</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mega-nav" aria-label="Open menu"><span></span><span></span></button>
+    </div>
+  </header>
+
+  <!-- TODO: replace placeholder copy below with Telza AI's real website content. -->
+  <main>
+    <!-- HERO — the headline splits, collapses into a bar and becomes the chapter nav -->
+    <section class="hero" id="hero">
+      <p class="hero-eyebrow">Telza AI · AI Communication &amp; Automation Platform</p>
+      <h1 class="split" aria-label="Talk Smarter.">
+        <span class="word w1" aria-hidden="true"><span class="txt">Talk</span><span class="fill"></span></span>
+        <span class="word w2" aria-hidden="true"><span class="txt">Smarter.</span><span class="fill"></span></span>
+      </h1>
+      <p class="lead hero-sub">Telza AI answers your calls, runs your WhatsApp conversations and supports your shoppers — automatically. Every customer gets a fast, helpful reply, and your team gets its time back.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#contact">Book a demo</a>
+        <a class="btn" href="#about">Explore Telza AI</a>
+      </div>
+      <span class="scroll-cue" aria-hidden="true"></span>
+
+      <!-- Dive layer: keywords rush past the camera as it enters the core -->
+      <div class="dive-layer" aria-hidden="true">
+        <span class="kw" style="--x:-30;--y:-24">Voice AI</span>
+        <span class="kw" style="--x:28;--y:-26">WhatsApp</span>
+        <span class="kw kw--desk" style="--x:-40;--y:4">Inbound calls</span>
+        <span class="kw kw--desk" style="--x:40;--y:2">Outbound calls</span>
+        <span class="kw" style="--x:-24;--y:28">Fillo</span>
+        <span class="kw" style="--x:26;--y:27">E-commerce AI</span>
+        <span class="kw kw--desk" style="--x:-12;--y:-36">24/7</span>
+        <span class="kw kw--desk" style="--x:14;--y:37">Multilingual</span>
+        <span class="kw kw--desk" style="--x:-44;--y:-14">CRM sync</span>
+        <span class="kw kw--desk" style="--x:44;--y:-12">Live hand-off</span>
+        <p class="dive-title">
+          <span class="dt-line"><span>Every conversation.</span></span>
+          <span class="dt-line"><span class="grad">One intelligent core.</span></span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ABOUT — camera dives through the core; it unfolds into a neural galaxy -->
+    <section class="about" id="about" data-chapter="Platform">
+      <!-- large kinetic typography: product names fill in as you scroll -->
+      <div class="kinetic" aria-hidden="true">
+        <div class="kinetic-row">
+          <span class="kt">Voice AI</span><i></i><span class="kt">WhatsApp</span><i></i><span class="kt">Inbound</span><i></i><span class="kt">Outbound</span><i></i><span class="kt">Fillo</span><i></i><span class="kt">E-commerce</span><i></i>
+        </div>
+      </div>
+      <!-- live product highlights floating over the galaxy (desktop) -->
+      <div class="live-chips" aria-hidden="true">
+        <div class="live-chip" style="--top:24%;--right:16%" data-speed="1"><span class="dot"></span><span><b>Inbound call answered</b><small>AI Voice Agent · first ring</small></span></div>
+        <div class="live-chip" style="--top:48%;--right:6%" data-speed="1.6"><span class="dot"></span><span><b>Order confirmed on WhatsApp</b><small>WhatsApp Automation · instant</small></span></div>
+        <div class="live-chip" style="--top:70%;--right:20%" data-speed="0.7"><span class="dot"></span><span><b>Customer details captured</b><small>Fillo · synced to CRM</small></span></div>
+      </div>
+      <div class="container">
+        <div class="kicker" data-reveal>01 — The platform</div>
+        <h2 class="h2" data-reveal>Every customer conversation, handled intelligently.</h2>
+        <p class="lead" data-reveal>Telza AI brings phone calls, WhatsApp and online store support into one platform. It understands what each customer needs, replies in natural language and completes the task — booking, updating or following up — without adding to your team's workload.</p>
+        <ul class="points">
+          <li data-reveal><em>A</em><b>Voice &amp; call automation</b></li>
+          <li data-reveal><em>B</em><b>WhatsApp &amp; messaging automation</b></li>
+          <li data-reveal><em>C</em><b>E-commerce &amp; workflow automation</b></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CAPABILITIES — galaxy condenses into a rotating data lattice; cards travel in 3D -->
+    <section class="caps" id="capabilities" data-chapter="Capabilities">
+      <div class="container caps-head">
+        <div>
+          <div class="kicker">02 — Products</div>
+          <h2 class="h2">Six products. One intelligent platform.</h2>
+        </div>
+        <div class="caps-count"><span class="caps-current">01</span> / 06</div>
+      </div>
+      <div class="caps-stage">
+        <div class="caps-track">
+          <!-- TODO: confirm the Fillo description matches the product -->
+          <article class="cap-card">
+            <div><div class="cap-num">01</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M6 2.5h8.5L19 7v14.5H6zM14 2.5V7h5M9 12h7M9 16h5%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linejoin=%22round%22/></svg>')"></div>
+              <h3>Fillo</h3>
+              <p>Collects customer details through natural conversation and fills in your forms and records automatically — no typing and no missed fields.</p></div>
+            <div class="tags"><span>Data capture</span><span>Smart forms</span><span>CRM sync</span></div>
+          </article>
+          <article class="cap-card">
+            <div><div class="cap-num">02</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M12 2.5a3 3 0 0 0-3 3V12a3 3 0 0 0 6 0V5.5a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3.5%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>')"></div>
+              <h3>AI Voice Agent</h3>
+              <p>A natural-sounding voice that understands intent, answers questions and completes tasks on the phone, in your customers' language.</p></div>
+            <div class="tags"><span>Natural voice</span><span>Multilingual</span><span>Real-time</span></div>
+          </article>
+          <article class="cap-card">
+            <div><div class="cap-num">03</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2zM21 3l-5.5 5.5M15 4v5h5%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/></svg>')"></div>
+              <h3>Inbound Calls</h3>
+              <p>Every incoming call answered on the first ring. Callers are qualified, their questions resolved and appointments booked, with a smooth hand-off to your team when needed.</p></div>
+            <div class="tags"><span>Zero hold time</span><span>Smart routing</span><span>Bookings</span></div>
+          </article>
+          <article class="cap-card">
+            <div><div class="cap-num">04</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2zM15 9l5.5-5.5M16 3h5v5%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/></svg>')"></div>
+              <h3>Outbound Calls</h3>
+              <p>Run reminder, follow-up, lead qualification and feedback calls at scale. Every outcome is logged automatically.</p></div>
+            <div class="tags"><span>Campaigns</span><span>Follow-ups</span><span>Lead qualification</span></div>
+          </article>
+          <article class="cap-card">
+            <div><div class="cap-num">05</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M4 5h16v10H9l-5 4z%22 fill=%22black%22/></svg>')"></div>
+              <h3>WhatsApp Automation</h3>
+              <p>Instant replies on the app your customers already use: order updates, answers to common questions and confirmations, with live hand-off that keeps the full context.</p></div>
+            <div class="tags"><span>WhatsApp Business</span><span>Notifications</span><span>Live hand-off</span></div>
+          </article>
+          <article class="cap-card">
+            <div><div class="cap-num">06</div>
+              <div class="cap-icon" style="--icon:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M3 4h2l2.4 11h11L21 7H6.2%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linejoin=%22round%22/><circle cx=%229%22 cy=%2219.5%22 r=%221.8%22 fill=%22black%22/><circle cx=%2217%22 cy=%2219.5%22 r=%221.8%22 fill=%22black%22/></svg>')"></div>
+              <h3>E-commerce AI</h3>
+              <p>A shopping assistant that tracks orders, handles returns, recommends products and brings back abandoned carts — day and night.</p></div>
+            <div class="tags"><span>Order tracking</span><span>Returns</span><span>Cart recovery</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCESS — lattice unwinds into a double helix; camera climbs it while steps flip -->
+    <section class="process" id="process" data-chapter="Process">
+      <div class="container">
+        <div>
+          <div class="kicker">03 — Features</div>
+          <h2 class="h2">Built for every conversation, at any hour.</h2>
+          <div class="proc-index">
+            <div class="digits"><div class="digits-col"><span>01</span><span>02</span><span>03</span></div></div>
+            <div class="proc-bar"><i></i></div>
+          </div>
+        </div>
+        <div class="steps">
+          <article class="step"><div class="step-tag">Feature 01</div><h3>Always on</h3><p>Available 24/7, with automated support that resolves routine requests instantly — nights, weekends and holidays included.</p></article>
+          <article class="step"><div class="step-tag">Feature 02</div><h3>Truly conversational</h3><p>Conversations that follow context and intent, so customers get faster, more accurate answers without repeating themselves.</p></article>
+          <article class="step"><div class="step-tag">Feature 03</div><h3>Connects to your stack</h3><p>Integrates with your CRM, helpdesk, calendar and online store, so every conversation updates the tools you already use.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- IMPACT — helix collapses into an orbital ring; counters are driven by scroll -->
+    <!-- TODO: replace with Telza AI's real, verified metrics. -->
+    <section class="impact" id="impact" data-chapter="Impact">
+      <div class="kinetic kinetic--rev" aria-hidden="true">
+        <div class="kinetic-row">
+          <span class="kt">Save time</span><i></i><span class="kt">Engage customers</span><i></i><span class="kt">Scale every call</span><i></i><span class="kt">Automate the routine</span><i></i>
+        </div>
+      </div>
+      <div class="container">
+        <div class="kicker" data-reveal>04 — Benefits</div>
+        <h2 class="h2" data-reveal>Less busywork. More engaged customers.</h2>
+        <p class="lead" data-reveal>Telza AI takes on repetitive work and the rush at peak hours, so your team can focus on the conversations that need a human touch.</p>
+        <div class="stats">
+          <div class="stat"><div class="stat-num" data-to="24" data-suffix="/7">0</div><div class="stat-label">Customer engagement, around the clock</div></div>
+          <div class="stat"><div class="stat-num" data-to="70" data-suffix="%">0</div><div class="stat-label">Less time spent on repetitive tasks</div></div>
+          <div class="stat"><div class="stat-num" data-to="3" data-suffix="x">0</div><div class="stat-label">More calls handled at peak times</div></div>
+          <div class="stat"><div class="stat-num" data-to="99.9" data-suffix="%" data-dec="1">0</div><div class="stat-label">Uptime for business-critical calls</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT — the ring re-forms as a globe; the headline is born from a line (mirror of the hero) -->
+    <section class="cta" id="contact" data-chapter="Contact">
+      <div class="kicker">05 — Get started</div>
+      <h2 class="split cta-split" aria-label="Let's talk.">
+        <span class="word w1" aria-hidden="true"><span class="txt">Let's</span><span class="fill"></span></span>
+        <span class="word w2" aria-hidden="true"><span class="txt">talk.</span><span class="fill"></span></span>
+      </h2>
+      <p class="lead">Explore Telza AI's products, or book a live demo to see how voice, WhatsApp and e-commerce automation can work for your business.</p>
+      <a class="btn btn-primary" href="mailto:hello@telza.ai">Book a demo</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Telza AI. All rights reserved.</span>
+    <nav aria-label="Footer"><a href="#about">Platform</a><a href="#capabilities">Products</a><a href="#contact">Contact</a></nav>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script>
+  (() => {
+    document.getElementById('year').textContent = new Date().getFullYear();
+    if (!window.gsap || !window.ScrollTrigger) return; // page stays fully readable without animation libs
+    document.documentElement.classList.add('anim');
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
+
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    const mobileQ = window.matchMedia('(max-width: 767px)');
+    const reduceQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    /* =====================================================
+       Scene state — every section tweens this one object;
+       the render loop eases the live values toward it.
+       ===================================================== */
+    const KEYS = ['shape', 'camZ', 'camY', 'lookY', 'offX', 'rotX', 'rotY', 'mix', 'size'];
+    const state = { shape: 0, camZ: 7, camY: 0, lookY: 0, offX: 0, rotX: 0, rotY: 0, mix: 0, size: 1 };
+    const live = Object.assign({}, state);
+
+    /* ===================== Three.js core ===================== */
+    const R = Math.random, TAU = Math.PI * 2, GOLD = Math.PI * (3 - Math.sqrt(5));
+    const G = () => (R() + R() + R() - 1.5) / 1.5;
+    const sph = (phi, th, r) => [Math.sin(phi) * Math.cos(th) * r, Math.cos(phi) * r, Math.sin(phi) * Math.sin(th) * r];
+
+    const SHAPES = [
+      // 0 · Hero core: glowing sphere
+      (i, N) => {
+        const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = GOLD * i;
+        let s = 1.8 * (0.97 + R() * 0.06);
+        if (R() < 0.12) s *= Math.cbrt(R()) * 0.85;
+        return [Math.cos(th) * r * s, y * s, Math.sin(th) * r * s];
+      },
+      // 1 · Platform: neural galaxy
+      () => {
+        if (R() < 0.1) return [G() * 0.4, G() * 0.2, G() * 0.4];
+        const arm = Math.floor(R() * 3), d = Math.pow(R(), 0.65) * 3.4;
+        const a = arm * TAU / 3 + d * 1.35 + G() * 0.35;
+        return [Math.cos(a) * d, G() * 0.2 * (1 - d / 3.8), Math.sin(a) * d];
+      },
+      // 2 · Capabilities: data lattice
+      () => {
+        const n = 5, S = 1.9, st = S * 2 / (n - 1), g = () => -S + Math.floor(R() * n) * st;
+        if (R() < 0.15) return [g() + G() * 0.06, g() + G() * 0.06, g() + G() * 0.06];
+        const t = (R() * 2 - 1) * S, ax = Math.floor(R() * 3);
+        return ax === 0 ? [t, g(), g()] : ax === 1 ? [g(), t, g()] : [g(), g(), t];
+      },
+      // 3 · Process: double helix
+      () => {
+        if (R() < 0.22) {
+          const tq = Math.round(R() * 28) / 14 - 1, a0 = tq * 9, u = R() * 2 - 1;
+          return [Math.cos(a0) * 1.05 * u, tq * 3.4, Math.sin(a0) * 1.05 * u];
+        }
+        const t = R() * 2 - 1, a = t * 9 + (R() < 0.5 ? 0 : Math.PI), r = 1.05 + G() * 0.06;
+        return [Math.cos(a) * r, t * 3.4 + G() * 0.04, Math.sin(a) * r];
+      },
+      // 4 · Impact: orbital ring
+      () => {
+        const u = R() * TAU;
+        if (R() < 0.18) { const rad = 2.9 + R() * 0.8; return [Math.cos(u) * rad, G() * 0.05, Math.sin(u) * rad]; }
+        const v = R() * TAU, rr = 0.32 * Math.sqrt(R()), Rr = 2.3;
+        return [Math.cos(u) * (Rr + rr * Math.cos(v)), rr * Math.sin(v), Math.sin(u) * (Rr + rr * Math.cos(v))];
+      },
+      // 5 · Contact: globe of latitudes & meridians
+      () => {
+        const r0 = 1.7, p = R();
+        if (p < 0.5) return sph((Math.floor(R() * 15) + 1) / 16 * Math.PI, R() * TAU, r0);
+        if (p < 0.75) return sph(R() * Math.PI, Math.floor(R() * 12) / 12 * TAU, r0);
+        if (p < 0.9) return sph(Math.acos(2 * R() - 1), R() * TAU, r0 * (0.98 + R() * 0.04));
+        return sph(Math.acos(2 * R() - 1), R() * TAU, r0 * Math.cbrt(R()) * 0.5);
+      }
+    ];
+
+    const VERT = `
+      uniform float uShape, uTime, uSize, uPR, uMix;
+      uniform vec3 uC1, uC2, uC3;
+      attribute vec3 p0; attribute vec3 p1; attribute vec3 p2;
+      attribute vec3 p3; attribute vec3 p4; attribute vec3 p5;
+      attribute float aRand;
+      varying vec3 vColor; varying float vAlpha;
+      vec3 shapeAt(float i) {
+        if (i < 0.5) return p0; if (i < 1.5) return p1; if (i < 2.5) return p2;
+        if (i < 3.5) return p3; if (i < 4.5) return p4; return p5;
+      }
+      void main() {
+        float s = clamp(uShape, 0.0, 5.0);
+        float a = floor(s);
+        float t = clamp((s - a) * 1.6 - aRand * 0.6, 0.0, 1.0);
+        t = t * t * (3.0 - 2.0 * t);
+        vec3 pos = mix(shapeAt(a), shapeAt(min(a + 1.0, 5.0)), t);
+        float flight = sin(t * 3.14159265);
+        vec3 swirl = vec3(sin(uTime * 0.7 + aRand * 40.0), cos(uTime * 0.6 + aRand * 31.0), sin(uTime * 0.5 + aRand * 17.0));
+        pos += swirl * (0.015 + flight * 0.45);
+        float ang = flight * (aRand - 0.5) * 2.5;
+        float c = cos(ang), sn = sin(ang);
+        pos.xz = mat2(c, -sn, sn, c) * pos.xz;
+        vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+        float depth = -mv.z;
+        gl_PointSize = min(uSize * uPR * (0.45 + aRand) * 18.0 / max(depth, 0.1), 26.0 * uPR);
+        gl_Position = projectionMatrix * mv;
+        float k = clamp(aRand * 0.9 + uMix * 0.7 - 0.3, 0.0, 1.0);
+        vColor = mix(mix(uC1, uC2, k), uC3, step(0.94, aRand) * 0.8);
+        vAlpha = smoothstep(0.15, 1.4, depth) * (0.35 + 0.45 * aRand) * (1.0 + flight * 0.4);
+      }`;
+    const FRAG = `
+      varying vec3 vColor; varying float vAlpha;
+      void main() {
+        float d = length(gl_PointCoord - 0.5);
+        if (d > 0.5) discard;
+        float a = smoothstep(0.5, 0.0, d);
+        gl_FragColor = vec4(vColor, a * a * vAlpha);
+      }`;
+
+    function initGL() {
+      if (!window.THREE) throw new Error('three missing');
+      const canvas = $('#gl');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: 'high-performance' });
+      const mobile = mobileQ.matches;
+      const N = mobile ? 6000 : (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 ? 9000 : 14000);
+      const pr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.75);
+      renderer.setPixelRatio(pr);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(mobile ? 60 : 50, 1, 0.05, 100);
+      const geo = new THREE.BufferGeometry();
+      SHAPES.forEach((fn, s) => {
+        const arr = new Float32Array(N * 3);
+        for (let i = 0; i < N; i++) { const p = fn(i, N); arr[i * 3] = p[0]; arr[i * 3 + 1] = p[1]; arr[i * 3 + 2] = p[2]; }
+        const attr = new THREE.BufferAttribute(arr, 3);
+        geo.setAttribute('p' + s, attr);
+        if (s === 0) geo.setAttribute('position', attr);
+      });
+      const rnd = new Float32Array(N); for (let i = 0; i < N; i++) rnd[i] = R();
+      geo.setAttribute('aRand', new THREE.BufferAttribute(rnd, 1));
+
+      const uniforms = {
+        uShape: { value: 0 }, uTime: { value: 0 }, uSize: { value: 1 }, uPR: { value: pr }, uMix: { value: 0 },
+        uC1: { value: new THREE.Color(css('--brand-1') || '#39FF14') },
+        uC2: { value: new THREE.Color(css('--brand-2') || '#14C9B8') },
+        uC3: { value: new THREE.Color(css('--brand-3') || '#ffffff') }
+      };
+      const mat = new THREE.ShaderMaterial({
+        uniforms, vertexShader: VERT, fragmentShader: FRAG,
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+      });
+      const points = new THREE.Points(geo, mat);
+      points.frustumCulled = false;
+      const group = new THREE.Group();
+      group.add(points); scene.add(group);
+
+      const resize = () => {
+        const w = window.innerWidth, h = window.innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h; camera.updateProjectionMatrix();
+      };
+      resize();
+      window.addEventListener('resize', resize);
+
+      let px = 0, py = 0, mx = 0, my = 0, time = 0;
+      window.addEventListener('pointermove', e => {
+        px = e.clientX / window.innerWidth * 2 - 1; py = e.clientY / window.innerHeight * 2 - 1;
+      }, { passive: true });
+
+      const clock = new THREE.Clock();
+      renderer.setAnimationLoop(() => {
+        const dt = Math.min(clock.getDelta(), 0.05);
+        const still = reduceQ.matches;
+        const k = still ? 1 : 1 - Math.pow(0.0015, dt);
+        for (const key of KEYS) live[key] += (state[key] - live[key]) * k;
+        if (!still) { time += dt; mx += (px - mx) * k * 0.5; my += (py - my) * k * 0.5; }
+        uniforms.uShape.value = live.shape; uniforms.uMix.value = live.mix;
+        uniforms.uSize.value = live.size; uniforms.uTime.value = time;
+        camera.position.set(mx * 0.35, live.camY - my * 0.25, live.camZ);
+        camera.lookAt(0, live.lookY, 0);
+        group.position.x = live.offX;
+        group.rotation.set(live.rotX, live.rotY + time * 0.04, 0);
+        renderer.render(scene, camera);
+      });
+    }
+    try { initGL(); } catch (e) { document.documentElement.classList.add('no-webgl'); }
+
+    /* ===================== Keyframes per chapter ===================== */
+    function keyframes(desk) {
+      const K = {};
+      K.hero = { shape: 0, camZ: desk ? 7 : 9, camY: 0, lookY: 0, offX: 0, rotX: 0, rotY: 0, mix: 0, size: 1 };
+      K.split = Object.assign({}, K.hero, { camZ: desk ? 5.4 : 7.4, rotX: 0.25, rotY: 0.7, mix: 0.15, size: 1.1 });
+      K.dive = { shape: 1, camZ: 1.6, camY: 0.9, lookY: 0, offX: 0, rotX: 0.55, rotY: 1.6, mix: 0.35, size: 1 };
+      K.about = { shape: 1, camZ: desk ? 5.6 : 7.5, camY: 2.4, lookY: 0, offX: desk ? 1.9 : 0, rotX: 0.3, rotY: 2.3, mix: 0.45, size: 1 };
+      K.capsIn = { shape: 2, camZ: desk ? 6.4 : 8.5, camY: 0.6, lookY: 0, offX: 0, rotX: 0.5, rotY: 2.9, mix: 0.6, size: 0.95 };
+      K.capsOut = Object.assign({}, K.capsIn, { rotX: 0.2, rotY: K.capsIn.rotY + Math.PI * 1.5 });
+      K.procIn = { shape: 3, camZ: desk ? 5.6 : 7.5, camY: -2.4, lookY: -2.4, offX: desk ? -1.7 : 0, rotX: 0, rotY: K.capsOut.rotY + 0.6, mix: 0.75, size: 1 };
+      K.procOut = Object.assign({}, K.procIn, { camY: 2.4, lookY: 2.4, rotY: K.procIn.rotY + Math.PI * 2 });
+      K.impact = { shape: 4, camZ: desk ? 6.6 : 8.8, camY: 2.2, lookY: 0, offX: 0, rotX: 0.9, rotY: K.procOut.rotY + 0.8, mix: 0.95, size: 1 };
+      K.cta = { shape: 5, camZ: desk ? 6.2 : 8, camY: 0, lookY: 0, offX: 0, rotX: 0.25, rotY: K.impact.rotY + 1.4, mix: 0.3, size: 1.1 };
+      return K;
+    }
+    // scrubbed transition of the shared scene state between two keyframes
+    const seg = (from, to, st) => gsap.fromTo(state, Object.assign({}, from),
+      Object.assign({}, to, { ease: 'none', immediateRender: false, scrollTrigger: Object.assign({ scrub: true }, st) }));
+
+    // in-page links: account for pin spacers so pinned chapters land at their start
+    $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+      const id = a.getAttribute('href');
+      const el = id.length > 1 && document.querySelector(id);
+      if (!el) return;
+      e.preventDefault();
+      const target = el.parentElement.classList.contains('pin-spacer') ? el.parentElement : el;
+      const y = id === '#hero' ? 0 : target.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: y, behavior: reduceQ.matches ? 'auto' : 'smooth' });
+    }));
+
+    /* ===================== Scroll choreography ===================== */
+    const mm = gsap.matchMedia();
+    mm.add({ desk: '(min-width: 768px)', motion: '(prefers-reduced-motion: no-preference)' }, ctx => {
+      const { desk, motion } = ctx.conditions;
+      const K = keyframes(desk);
+
+      if (!motion) {
+        // Reduced motion: no pins or scrubbing — the scene simply sets the matching form per chapter.
+        Object.assign(state, K.hero);
+        [['#hero', K.hero], ['#about', K.about], ['#capabilities', K.capsIn], ['#process', K.procIn], ['#impact', K.impact], ['#contact', K.cta]]
+          .forEach(([sel, k]) => ScrollTrigger.create({
+            trigger: sel, start: 'top 55%', end: 'bottom 55%',
+            onToggle: self => { if (self.isActive) Object.assign(state, k); }
+          }));
+        $$('.stat-num').forEach(el => { el.textContent = el.dataset.to + (el.dataset.suffix || ''); });
+        return;
+      }
+
+      /* ---- 1. HERO: split → solid → collapse → bar flies into the main navigation; camera dives into the core ---- */
+      const h1 = $('#hero .split'), words = $$('#hero .word'), fills = $$('#hero .fill'), txts = $$('#hero .txt');
+      // landing spot: the bottom edge of the nav pill (desktop) or the menu button (smaller screens)
+      const navTarget = () => window.matchMedia('(min-width: 1100px)').matches ? $('.mega-list') : $('.nav-toggle');
+      const THIN = 0.03, FILL_RATIO = 0.76;
+      const geom = () => {
+        const vw = document.documentElement.clientWidth;
+        const r = navTarget().getBoundingClientRect();
+        const barW = words[0].offsetWidth + words[1].offsetWidth;
+        const wordH = words[0].offsetHeight;
+        return {
+          dx: r.left + r.width / 2 - vw / 2,
+          dy: r.bottom - 1 - (h1.offsetTop + h1.offsetHeight / 2),
+          sx: r.width / barW,
+          sy: 2 / (wordH * FILL_RATIO * THIN)
+        };
+      };
+      const hero = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { id: 'hero', trigger: '#hero', start: 'top top', end: '+=230%', pin: true, scrub: 0.8, anticipatePin: 1, invalidateOnRefresh: true }
+      });
+      hero
+        .fromTo(state, Object.assign({}, K.hero), Object.assign({}, K.split, { duration: 2.3 }), 0)
+        .to('.hero-eyebrow', { yPercent: -60, clipPath: 'inset(0 0 100% 0)', duration: 0.8 }, 0)
+        .to('.hero-sub, .hero-ctas', { y: 40, clipPath: 'inset(100% 0 0 0)', duration: 0.8, stagger: 0.1 }, 0)
+        .to('.scroll-cue', { scaleY: 0, duration: 0.4 }, 0)
+        .to(words[0], { x: () => -window.innerWidth * 0.1, duration: 1, ease: 'power2.inOut' }, 0)
+        .to(words[1], { x: () => window.innerWidth * 0.1, duration: 1, ease: 'power2.inOut' }, 0)
+        .to(fills, { scaleX: 1, duration: 0.6, stagger: 0.08, ease: 'power2.inOut' }, 1)
+        .set(txts, { opacity: 0 }, 1.68)
+        .to(words, { scaleY: THIN, x: 0, duration: 0.8, ease: 'power3.inOut' }, 1.6)
+        .to(h1, { columnGap: 0, duration: 0.8, ease: 'power3.inOut' }, 1.6)
+        .to(h1, {
+          x: () => geom().dx, y: () => geom().dy, scaleX: () => geom().sx, scaleY: () => geom().sy,
+          duration: 0.9, ease: 'power2.inOut'
+        }, 2.4)
+        .to(fills, { opacity: 0.15, duration: 0.3 }, 3.0)
+        .fromTo(state, Object.assign({}, K.split), Object.assign({}, K.dive, { duration: 1.2, immediateRender: false }), 2.3)
+        .set(h1, { autoAlpha: 0 }, 3.3)
+        .to({}, { duration: 0.35 }, 3.3) // keeps the pin length/timing identical
+        .to({}, { duration: 0.2 });
+
+      // Dive layer — added inside the existing hero duration (ends at 3.85), so the pin length is unchanged.
+      const HERO_END = hero.duration();
+      const kws = $$('.dive-layer .kw');
+      gsap.set(kws, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
+      gsap.set('.dive-title', { yPercent: -50 });
+      gsap.set('.dive-title .dt-line > span', { yPercent: 110 });
+      hero.set('.dive-layer', { autoAlpha: 1 }, 2.25);
+      kws.forEach((kw, i) => {
+        const vx = parseFloat(kw.style.getPropertyValue('--x')) || 0;
+        const vy = parseFloat(kw.style.getPropertyValue('--y')) || 0;
+        const t0 = 2.3 + (i % 5) * 0.08;
+        hero.fromTo(kw, { scale: 0.3, autoAlpha: 0, x: 0, y: 0 },
+          { scale: 1, autoAlpha: 1, duration: 0.45, ease: 'power2.out', immediateRender: false }, t0)
+          .to(kw, {
+            x: () => vx * window.innerWidth / 100 * 1.3, y: () => vy * window.innerHeight / 100 * 1.3,
+            scale: 2.4, autoAlpha: 0, filter: 'blur(6px)', duration: 0.75, ease: 'power2.in'
+          }, t0 + 0.45);
+      });
+      hero.fromTo('.dive-title .dt-line > span', { yPercent: 110 },
+          { yPercent: 0, duration: 0.4, stagger: 0.1, ease: 'power3.out', immediateRender: false }, 2.75)
+        .fromTo('.dive-title', { scale: 1, autoAlpha: 1, filter: 'blur(0px)' },
+          { scale: 1.5, autoAlpha: 0, filter: 'blur(8px)', duration: 0.4, ease: 'power2.in', immediateRender: false }, HERO_END - 0.4);
+
+      /* ---- 2. ABOUT: pull back out of the core — it has unfolded into a galaxy ---- */
+      seg(K.dive, K.about, { trigger: '#about', start: 'top bottom', end: 'center center' });
+      $$('[data-reveal]').forEach(el => gsap.fromTo(el,
+        { yPercent: 40, clipPath: 'inset(0 0 100% 0)' },
+        { yPercent: 0, clipPath: 'inset(0 0 0% 0)', ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 88%', end: 'top 60%', scrub: 0.6 } }));
+
+      // Kinetic strip: drifts sideways while each word fills with the brand gradient
+      const kinetic = (section, dir) => {
+        const row = $(section + ' .kinetic-row');
+        gsap.fromTo(row, { xPercent: dir > 0 ? 0 : -30 }, {
+          xPercent: dir > 0 ? -30 : 0, ease: 'none',
+          scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: true }
+        });
+        gsap.to($$(section + ' .kt'), {
+          backgroundSize: '100% 100%', ease: 'none', stagger: 0.5,
+          scrollTrigger: { trigger: section, start: 'top 95%', end: 'center 40%', scrub: 0.6 }
+        });
+      };
+      kinetic('#about', 1);
+
+      // Live product highlights: parallax at different depths + wipe-in
+      $$('.live-chip').forEach(chip => {
+        const sp = parseFloat(chip.dataset.speed) || 1;
+        gsap.fromTo(chip, { y: 90 * sp }, {
+          y: -90 * sp, ease: 'none',
+          scrollTrigger: { trigger: '#about', start: 'top bottom', end: 'bottom top', scrub: true }
+        });
+        gsap.fromTo(chip, { clipPath: 'inset(0 100% 0 0 round 16px)' }, {
+          clipPath: 'inset(0 0% 0 0 round 16px)', ease: 'power2.out',
+          scrollTrigger: { trigger: chip, start: 'top 90%', end: 'top 65%', scrub: 0.6 }
+        });
+      });
+
+      /* ---- 3. CAPABILITIES: galaxy condenses into a lattice; cards travel on a 3D rail ---- */
+      seg(K.about, K.capsIn, { trigger: '#capabilities', start: 'top bottom', end: 'top top' });
+      const capsTrack = $('.caps-track');
+      const dist = () => Math.max(0, capsTrack.scrollWidth - document.documentElement.clientWidth);
+      const capsEnd = () => '+=' + Math.max(dist(), window.innerHeight);
+      const capsCurrent = $('.caps-current'), cards = $$('.cap-card');
+      const hScroll = gsap.to(capsTrack, {
+        x: () => -dist(), ease: 'none',
+        scrollTrigger: {
+          trigger: '#capabilities', start: 'top top', end: capsEnd, pin: true, scrub: 0.6,
+          anticipatePin: 1, invalidateOnRefresh: true,
+          onUpdate: self => { capsCurrent.textContent = '0' + Math.min(cards.length, 1 + Math.floor(self.progress * cards.length * 0.999)); }
+        }
+      });
+      seg(K.capsIn, K.capsOut, { trigger: '#capabilities', start: 'top top', end: capsEnd, invalidateOnRefresh: true });
+      cards.forEach(card => {
+        gsap.timeline({ scrollTrigger: { trigger: card, containerAnimation: hScroll, start: 'left right', end: 'right left', scrub: true } })
+          .fromTo(card, { rotateY: -32, z: -180, transformOrigin: '0% 50%' }, { rotateY: 0, z: 0, ease: 'power1.out' })
+          .to(card, { rotateY: 32, z: -180, transformOrigin: '100% 50%', ease: 'power1.in' });
+      });
+
+      /* ---- 4. PROCESS: lattice unwinds into a helix; camera climbs it; each step folds into the next ---- */
+      seg(K.capsOut, K.procIn, { trigger: '#process', start: 'top bottom', end: 'top top' });
+      const steps = $$('.step');
+      gsap.set(steps.slice(1), { rotateX: 100, transformOrigin: '50% 100%' });
+      const proc = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: '#process', start: 'top top', end: '+=250%', pin: true, scrub: 0.6, anticipatePin: 1 }
+      });
+      proc.fromTo(state, Object.assign({}, K.procIn), Object.assign({}, K.procOut, { duration: 3, immediateRender: false }), 0)
+        .to('.proc-bar i', { scaleX: 1, duration: 3 }, 0);
+      steps.slice(1).forEach((s, i) => {
+        const at = 0.6 + i * 1.1;
+        proc.to(steps[i], { rotateX: -100, transformOrigin: '50% 0%', duration: 0.6, ease: 'power2.inOut' }, at)
+          .to(s, { rotateX: 0, duration: 0.6, ease: 'power2.inOut' }, at + 0.1)
+          .to('.digits-col', { yPercent: -(100 / 3) * (i + 1), duration: 0.5, ease: 'power2.inOut' }, at + 0.1);
+      });
+
+      /* ---- 5. IMPACT: helix collapses into an orbital ring; counters ride the scroll ---- */
+      seg(K.procOut, K.impact, { trigger: '#impact', start: 'top bottom', end: 'center center' });
+      kinetic('#impact', -1);
+      $$('.stat-num').forEach(el => {
+        const to = parseFloat(el.dataset.to), dec = parseInt(el.dataset.dec || '0', 10), suf = el.dataset.suffix || '';
+        const o = { v: 0 };
+        gsap.to(o, {
+          v: to, ease: 'power1.out',
+          onUpdate: () => { el.textContent = o.v.toFixed(dec) + suf; },
+          scrollTrigger: { trigger: el, start: 'top 90%', end: 'top 50%', scrub: 0.5 }
+        });
+      });
+
+      /* ---- 6. CONTACT: ring re-forms as a globe; headline is born from a line (hero in reverse) ---- */
+      seg(K.impact, K.cta, { trigger: '#contact', start: 'top bottom', end: 'top 15%' });
+      const cWords = $$('.cta-split .word'), cFills = $$('.cta-split .fill'), cTxts = $$('.cta-split .txt');
+      gsap.timeline({ scrollTrigger: { trigger: '#contact', start: 'top 80%', end: 'top 20%', scrub: 0.6 } })
+        .fromTo(cWords, { scaleY: THIN }, { scaleY: 1, duration: 1, ease: 'power3.inOut' }, 0)
+        .fromTo('.cta-split', { columnGap: 0 }, { columnGap: '0.26em', duration: 1, ease: 'power3.inOut' }, 0)
+        .fromTo(cFills, { scaleX: 1 }, { scaleX: 0, duration: 0.6, ease: 'power2.inOut', stagger: 0.08 }, 1)
+        .fromTo(cTxts, { opacity: 0 }, { opacity: 1, duration: 0.01 }, 1);
+
+      return () => Object.assign(state, K.hero);
+    });
+
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger.refresh());
+  })();
+  </script>
+
+  <script>
+  /* ===== Navbar mega menus: hover + click on desktop, accordions in the mobile menu ===== */
+  (() => {
+    const header = document.querySelector('.site-header');
+    const nav = document.getElementById('mega-nav');
+    const toggle = document.querySelector('.nav-toggle');
+    if (!header || !nav || !toggle) return;
+    const items = Array.from(nav.querySelectorAll('.mega-item:not(.mega-item--link)'));
+    const deskQ = window.matchMedia('(min-width: 1100px)');
+    const hoverQ = window.matchMedia('(hover: hover) and (pointer: fine)');
+    let closeTimer = 0, hoverOpenedAt = 0;
+
+    // stagger indexes for the entrance animation
+    nav.querySelectorAll('.mega-item').forEach((item, n) => item.style.setProperty('--n', n));
+    items.forEach(item => {
+      item.querySelectorAll('.mega-link, .mega-feature, .case-card').forEach((el, i) => el.style.setProperty('--i', i));
+    });
+
+    const setOpen = (item, open) => {
+      item.classList.toggle('is-open', open);
+      item.querySelector('.mega-trigger').setAttribute('aria-expanded', String(open));
+    };
+    const closeAll = except => items.forEach(i => { if (i !== except) setOpen(i, false); });
+    const openOnly = item => { clearTimeout(closeTimer); closeAll(item); setOpen(item, true); };
+
+    items.forEach(item => {
+      const trigger = item.querySelector('.mega-trigger');
+      item.addEventListener('pointerenter', e => {
+        if (e.pointerType !== 'mouse' || !deskQ.matches || !hoverQ.matches) return;
+        if (!item.classList.contains('is-open')) hoverOpenedAt = performance.now();
+        openOnly(item);
+      });
+      item.addEventListener('pointerleave', e => {
+        if (e.pointerType !== 'mouse' || !deskQ.matches || !hoverQ.matches) return;
+        clearTimeout(closeTimer);
+        closeTimer = setTimeout(() => setOpen(item, false), 180);
+      });
+      trigger.addEventListener('click', () => {
+        const isOpen = item.classList.contains('is-open');
+        if (deskQ.matches) {
+          // a click right after hover-open shouldn't immediately close the panel
+          if (isOpen && performance.now() - hoverOpenedAt < 400) return;
+          isOpen ? setOpen(item, false) : openOnly(item);
+        } else {
+          setOpen(item, !isOpen); // mobile accordion: several may stay open
+        }
+      });
+      item.addEventListener('focusout', e => {
+        if (deskQ.matches && !item.contains(e.relatedTarget)) setOpen(item, false);
+      });
+    });
+
+    // mobile / tablet full-screen menu
+    const setMenu = open => {
+      nav.style.setProperty('--hh', header.offsetHeight + 'px');
+      header.classList.toggle('menu-open', open);
+      document.documentElement.classList.toggle('menu-lock', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      if (!open) closeAll();
+    };
+    toggle.addEventListener('click', () => setMenu(!header.classList.contains('menu-open')));
+
+    // following a link closes everything
+    nav.addEventListener('click', e => {
+      if (!e.target.closest('a')) return;
+      closeAll();
+      if (header.classList.contains('menu-open')) setMenu(false);
+    });
+    document.addEventListener('click', e => { if (deskQ.matches && !nav.contains(e.target)) closeAll(); });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const open = items.find(i => i.classList.contains('is-open'));
+      if (header.classList.contains('menu-open')) { setMenu(false); toggle.focus(); }
+      else if (open) { closeAll(); open.querySelector('.mega-trigger').focus(); }
+    });
+    deskQ.addEventListener('change', () => { closeAll(); setMenu(false); });
+  })();
+  </script>
+</body>
+</html>
